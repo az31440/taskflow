@@ -1,8 +1,7 @@
-package com.example.taskflow.model;
+package com.example.taskflow.entity;
 
 public enum TaskStatus {
-    TODO,
+    TO_DO,
     IN_PROGRESS,
     COMPLETED
 }
-

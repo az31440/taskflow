@@ -1,45 +1,59 @@
 package com.example.taskflow.controller;
 
-import com.example.taskflow.model.Task;
+import com.example.taskflow.entity.Task;
+import com.example.taskflow.entity.TaskStatus;
 import com.example.taskflow.service.TaskService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping("/tasks")
 public class TaskController {
 
-    private final TaskService taskService;
+    @Autowired
+    private TaskService taskService;
 
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-    }
-
+    // Get all tasks
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        return ResponseEntity.ok(taskService.getAllTasks());
+    public List<Task> getAllTasks() {
+        return taskService.getAllTasks();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
+    // Get tasks by status (To Do, In Progress, Completed)
+    @GetMapping("/status/{status}")
+    public List<Task> getTasksByStatus(@PathVariable String status) {
+        return taskService.getTasksByStatus(status);
     }
 
+    // Create a new task
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        return ResponseEntity.ok(taskService.createTask(task));
+    public Task createTask(@RequestBody Task task) {
+        return taskService.createTask(task);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task task) {
-        return ResponseEntity.ok(taskService.updateTask(id, task));
+    // Update task status
+    @PutMapping("/{id}/status")
+    public Task updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
+        TaskStatus taskStatus = TaskStatus.valueOf(status.toUpperCase());
+        return taskService.updateTaskStatus(id, taskStatus);
     }
 
+    // Method to get task by id
+    @GetMapping("/{id}")
+    public Task getTaskById(@PathVariable Long id) {
+        return taskService.getTaskById(id);
+    }
+    @PatchMapping("/{id}/description")
+    public ResponseEntity<Task> updateTaskDescription(@PathVariable Long id, @RequestBody String newDescription) {
+        Task updatedTask = taskService.updateTaskDescription(id, newDescription);
+        return ResponseEntity.ok(updatedTask);
+    }
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+    public ResponseEntity<String> deleteTask(@PathVariable Long id) {
         taskService.deleteTask(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Task with ID " + id + " deleted successfully.");
     }
 }
