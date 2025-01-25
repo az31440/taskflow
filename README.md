@@ -17,7 +17,7 @@ TaskFlow is a task management system built using Java and Spring Boot. It enable
 - **Backend**: Spring Boot
 - **Testing**: JUnit 5, Mockito, MockMvc
 - **Build Tool**: Gradle
-- **Database**: H2 (in-memory database for development/testing)
+- **Database**: MYSQL (in-memory database for development/testing)
 
 ---
 
