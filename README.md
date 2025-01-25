@@ -91,19 +91,17 @@ Execute the following command:
 
 ### Sample Test (TaskControllerTest)
 ```java
-@Test
-public void testUpdateTaskDescription() throws Exception {
-    Task updatedTask = new Task(1L, "Test Task", TaskStatus.TO_DO, "Updated description");
+    @Test
+    public void testGetTaskById() throws Exception {
+        when(taskService.getTaskById(1L)).thenReturn(task);
 
-    when(taskService.updateTaskDescription(1L, "Updated description")).thenReturn(updatedTask);
-
-    mockMvc.perform(MockMvcRequestBuilders.patch("/tasks/1/description")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("\"Updated description\""))
-            .andExpect(status().isOk())
-            .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Updated description"))
-            .andDo(MockMvcResultHandlers.print());
-}
+        mockMvc.perform(MockMvcRequestBuilders.get("/tasks/1"))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Test Task"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("TO_DO"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Test description"));
+    }
 ```
 
 ---
