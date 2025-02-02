@@ -92,15 +92,11 @@ Execute the following command:
 ### Sample Test (TaskControllerTest)
 ```java
     @Test
-    public void testGetTaskById() throws Exception {
-        when(taskService.getTaskById(1L)).thenReturn(task);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/tasks/1"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Test Task"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("TO_DO"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Test description"));
+    void updateTaskDescription_ShouldUpdateDescription() {
+        when(taskService.updateTaskDescription(1L, "New Description"))
+                .thenReturn(new Task(1L, "Task 1", TaskStatus.TO_DO, "New Description"));
+        ResponseEntity<Task> response = taskController.updateTaskDescription(1L, "New Description");
+        assertEquals("New Description", response.getBody().getDescription());
     }
 ```
 
