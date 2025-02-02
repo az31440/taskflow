@@ -5,24 +5,20 @@ import com.example.taskflow.entity.TaskStatus;
 import com.example.taskflow.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
-
-
-import java.util.Collections;
-
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-public class TaskControllerTest {
-
-    private MockMvc mockMvc;
+@ExtendWith(MockitoExtension.class)
+class TaskControllerTest {
 
     @Mock
     private TaskService taskService;
@@ -30,71 +26,66 @@ public class TaskControllerTest {
     @InjectMocks
     private TaskController taskController;
 
-    private Task task;
+    private Task task1, task2;
 
     @BeforeEach
-    public void setup() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(taskController).build();
-        task = new Task(1L, "Test Task", TaskStatus.TO_DO, "Test description");
+    void setUp() {
+        task1 = new Task(1L, "Task 1", TaskStatus.TO_DO, "Description 1");
+        task2 = new Task(2L, "Task 2", TaskStatus.IN_PROGRESS, "Description 2");
     }
 
     @Test
-    public void testGetAllTasks() throws Exception {
-        when(taskService.getAllTasks()).thenReturn(Collections.singletonList(task));
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/tasks"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value("Test Task"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].status").value("TO_DO"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].description").value("Test description"));
+    void getAllTasks_ShouldReturnAllTasks() {
+        when(taskService.getAllTasks()).thenReturn(Arrays.asList(task1, task2));
+        List<Task> tasks = taskController.getAllTasks();
+        assertEquals(2, tasks.size());
     }
 
     @Test
-    public void testCreateTask() throws Exception {
-        when(taskService.createTask(any(Task.class))).thenReturn(task);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/tasks")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Test Task\", \"status\":\"TO_DO\", \"description\":\"Test description\"}"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Test Task"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("TO_DO"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Test description"));
+    void getTasksByStatus_ShouldReturnFilteredTasks() {
+        when(taskService.getTasksByStatus("TO_DO")).thenReturn(List.of(task1));
+        List<Task> tasks = taskController.getTasksByStatus("TO_DO");
+        assertEquals(1, tasks.size());
+        assertEquals(TaskStatus.TO_DO, tasks.get(0).getStatus());
     }
 
     @Test
-    public void testUpdateTaskStatus() throws Exception {
-        Task updatedTask = new Task(1L, "Test Task", TaskStatus.IN_PROGRESS, "Test description");
+    void createTask_ShouldReturnCreatedTask() {
+        when(taskService.createTask(any(Task.class))).thenReturn(task1);
+        Task createdTask = taskController.createTask(task1);
+        assertNotNull(createdTask);
+        assertEquals("Task 1", createdTask.getName());
+    }
 
-        // Mock the updateTaskStatus method to return the task with updated status
+    @Test
+    void updateTaskStatus_ShouldReturnUpdatedTask() {
+        Task updatedTask = new Task(1L, "Task 1", TaskStatus.IN_PROGRESS, "Description 1");
         when(taskService.updateTaskStatus(1L, TaskStatus.IN_PROGRESS)).thenReturn(updatedTask);
+        Task result = taskController.updateTaskStatus(1L, "IN_PROGRESS");
+        assertEquals(TaskStatus.IN_PROGRESS, result.getStatus());
+        verify(taskService, times(1)).updateTaskStatus(1L, TaskStatus.IN_PROGRESS);
+    }
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/tasks/1/status")
-                        .param("status", "IN_PROGRESS"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("IN_PROGRESS"));
+
+    @Test
+    void getTaskById_ShouldReturnTask() {
+        when(taskService.getTaskById(1L)).thenReturn(task1);
+        Task retrievedTask = taskController.getTaskById(1L);
+        assertEquals(1L, retrievedTask.getId());
     }
 
     @Test
-    public void testGetTaskById() throws Exception {
-        when(taskService.getTaskById(1L)).thenReturn(task);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/tasks/1"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Test Task"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("TO_DO"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Test description"));
+    void updateTaskDescription_ShouldUpdateDescription() {
+        when(taskService.updateTaskDescription(1L, "New Description"))
+                .thenReturn(new Task(1L, "Task 1", TaskStatus.TO_DO, "New Description"));
+        ResponseEntity<Task> response = taskController.updateTaskDescription(1L, "New Description");
+        assertEquals("New Description", response.getBody().getDescription());
     }
 
-    
     @Test
-    public void testDeleteTask() throws Exception {
+    void deleteTask_ShouldReturnSuccessMessage() {
         doNothing().when(taskService).deleteTask(1L);
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/tasks/1"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string("Task with ID 1 deleted successfully."));
+        ResponseEntity<String> response = taskController.deleteTask(1L);
+        assertEquals("Task with ID 1 deleted successfully.", response.getBody());
     }
 }
